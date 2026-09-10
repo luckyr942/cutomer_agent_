@@ -1,22 +1,22 @@
 import sys
 from pathlib import Path
 
-# Ensure project root is in sys.path when running as a standalone script
+# Ensure project root is in sys.path when running directly
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-import pandas as pd 
+import pandas as pd
 from src.config import SAMPLE_DATA_DIR, SAMPLE_CSV_PATH
 
-def generate_sample_synthetic_twcs():
+def generate_synthetic_twcs():
     """Generates a small synthetic TWCS dataset matching Kaggle's schema."""
     SAMPLE_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     synthetic_data = [
-        # Conversation1 :  Delivery Delay (AmazonHelp)
+        # Conversation 1: Delivery Delay (AmazonHelp)
         {
-            "tweet_id": 0,
+            "tweet_id": 101,
             "author_id": "customer_1",
             "inbound": True,
             "created_at": "Wed Oct 11 10:00:00 +0000 2017",
@@ -95,9 +95,7 @@ def generate_sample_synthetic_twcs():
 
     df = pd.DataFrame(synthetic_data)
     df.to_csv(SAMPLE_CSV_PATH, index=False)
-    print(f"Created Synthetic sample dataset with {len(df)} tweets at:\n {SAMPLE_CSV_PATH}")
+    print(f"✅ Created synthetic sample dataset with {len(df)} tweets at:\n   {SAMPLE_CSV_PATH}")
 
 if __name__ == "__main__":
-    generate_sample_synthetic_twcs()
-
-
+    generate_synthetic_twcs()
