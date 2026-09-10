@@ -19,6 +19,7 @@ def download_twcs():
     print("⏬ Initiating Kaggle download for 'thoughtvector/customer-support-on-twitter'...")
 
     try:
+        # pyrefly: ignore [missing-import]
         from kaggle.api.kaggle_api_extended import KaggleApi
 
         api = KaggleApi()
