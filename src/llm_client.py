@@ -34,7 +34,7 @@ class LLMClient:
             self.client = None
 
     
-    def generete(self, prompt:str,
+    def generate(self, prompt:str,
         system_prompt: str = "Yoa are a hellpful customer support AI assistant.") -> 
         str: """
         Send a prompt to the LLM.
