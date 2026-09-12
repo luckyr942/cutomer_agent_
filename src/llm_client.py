@@ -20,15 +20,24 @@ from src.config import (
 class LLMClient:
     """OpenAI API wrapper with dallback support for offline/mock responses."""
 
-    def __init__(self, api_key: str = OPENAI_API_KEY, base_url: str = OPENAI_BASE_URL, model: str = DEFAULT_MODEL):
+    def __init__(
+        self,
+        api_key: str = OPENAI_API_KEY,
+        base_url: str = OPENAI_BASE_URL,
+        model: str = DEFAULT_MODEL,
+    ):
         self.api_key = api_key
         self.base_url = base_url
         self.model = model
 
         if self.api_key:
             self.client = OpenAI(
-                api_key = self.api_key,
-                base_url = self.base_url,
+                api_key=self.api_key,
+                base_url=self.base_url,
+                default_headers={
+                    "HTTP-Referer": "https://github.com/customer-support-agent",
+                    "X-Title": "Customer Support Agent",
+                },
             )
         else:
             self.client = None
@@ -56,8 +65,7 @@ class LLMClient:
                 max_tokens=300
             )
             
-            content = response.choices[0].messages.content
-
+            content = response.choices[0].message.content
             if not content:
                 raise ValueError("LLM returned an empty response.")
 

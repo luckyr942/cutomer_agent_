@@ -1,0 +1,171 @@
+================================================================================
+           ENGINEERING BUG AUDIT, POST-MORTEM & RESOLUTION LOG
+Project: LLM Customer Support Agent (Intent Classification & Guardrails)
+Environment: macOS (Apple Silicon), Python 3.12 (.venv), OpenRouter API
+Model: nex-agi/nex-n2.5-mini:free
+================================================================================
+
+--------------------------------------------------------------------------------
+INCIDENT #1: OpenRouter 404 HTML Response (API Routing Regression)
+--------------------------------------------------------------------------------
+Symptoms & Error:
+  - Running 'python src/agent/classify.py' printed hundreds of lines of raw HTML:
+    '<!DOCTYPE html>...<title>Not Found | OpenRouter</title>...404: Not Found'
+  - The client failed to connect to OpenRouter and dropped straight into fallback.
+
+Root Cause:
+  - 'OPENAI_BASE_URL' in 'src/config.py' and '.env' was incorrectly configured as:
+    'https://openrouter.ai/nex-agi/nex-n2.5-mini:free'
+  - The OpenAI SDK automatically appends '/chat/completions' to the base URL,
+    causing requests to hit:
+    'https://openrouter.ai/nex-agi/nex-n2.5-mini:free/chat/completions'
+    This route is a frontend web page on openrouter.ai, not an API endpoint.
+
+Fix Applied:
+  1. Updated 'src/config.py' to point strictly to the v1 REST endpoint:
+     OPENAI_BASE_URL = "https://openrouter.ai/api/v1"
+  2. Separated the model identifier into its own environment variable:
+     DEFAULT_MODEL = "nex-agi/nex-n2.5-mini:free"
+  3. Added 'override=True' to 'load_dotenv(BASE_DIR / ".env", override=True)'
+     so stale terminal export variables do not shadow project config.
+
+Verification Output:
+  Base URL: https://openrouter.ai/api/v1
+  Model: nex-agi/nex-n2.5-mini:free
+  Key loaded: True
+  HTTP Status: 200 OK
+
+
+--------------------------------------------------------------------------------
+INCIDENT #2: OpenAI SDK 'Choice' Attribute Schema Mismatch
+--------------------------------------------------------------------------------
+Symptoms & Error:
+  - Terminal output:
+    "LLM API call failed: 'Choice' object has no attribute 'messages'"
+  - Execution fell back to mock generation.
+
+Root Cause:
+  - Inside 'src/llm_client.py' (line ~38), the code accessed:
+    'response.choices[0].messages.content'
+  - The official OpenAI Python SDK schema defines this object property as
+    singular: '.message' (ChatCompletionMessage), not plural '.messages'.
+
+Fix Applied:
+  - Corrected line in 'src/llm_client.py':
+    Old: return response.choices[0].messages.content.strip()
+    New: return response.choices[0].message.content.strip()
+
+Verification Output:
+  Message object: ChatCompletionMessage(content='Hi! How can I help you', role='assistant')
+  Content: Hi! How can I help you
+
+
+--------------------------------------------------------------------------------
+INCIDENT #3: Silent 'NoneType' Return in LLMClient.generate()
+--------------------------------------------------------------------------------
+Symptoms & Error:
+  - Running:
+    python -c "from src.llm_client import LLMClient; print(LLMClient().generate('Respond with: OK'))"
+    Returned: 'None'
+  - Downstream crash in 'src/agent/classify.py':
+    "AttributeError: 'NoneType' object has no attribute 'strip'"
+
+Root Cause:
+  - Inside 'src/llm_client.py', the 'return content.strip()' line inside the
+    try block had been commented out or bypassed without an explicit return.
+  - Python defaulted to returning 'None' from the method.
+
+Fix Applied:
+  - Explicitly restored and safeguarded the return contract in 'src/llm_client.py':
+    content = response.choices[0].message.content
+    if not content:
+        raise ValueError("LLM returned an empty response.")
+    return content.strip()
+  - Added defensive check in 'classify.py' to ensure 'raw_response' is non-None
+    before invoking string operations.
+
+Verification Output:
+  $ python -c "from src.llm_client import LLMClient; print('LLM Output:', LLMClient().generate('Respond with: OK'))"
+  LLM Output: OK
+
+
+--------------------------------------------------------------------------------
+INCIDENT #4: Indentation Bug in Keyword Baseline Classifier (Early Termination)
+--------------------------------------------------------------------------------
+Symptoms & Error:
+  - Queries like "My payment got stucked i din't recieved it yet" and
+    "My app keeps freezing after the update" unexpectedly classified as:
+    Intent: 'other'
+    Confidence: 0.7
+    Reasoning: 'Fallback to keyword classifier.'
+
+Root Cause:
+  - In 'src/intent.py', 'classify_intent_by_keywords()' had an indentation error:
+      for intent, keywords in KEYWORD_RULES.items():
+          if any(key in text_lower for key in keywords):
+              return intent
+          return "other"   # <-- FATAL: Indented inside the loop
+  - Because 'return "other"' was inside the loop body, if the message did not
+    match the very first taxonomy entry ('delivery_delay'), the loop terminated
+    immediately without checking 'payment_issue', 'product_defect', etc.
+
+Fix Applied:
+  - Moved 'return "other"' outside the 'for' loop scope.
+  - Upgraded 'KEYWORD_RULES' with linguistic word stems ("pay", "charg", "stuck",
+    "deduct", "fee") so typos and tense shifts match reliably during fallback.
+
+Verification Output:
+  $ python src/intent.py
+  Text: My payment got stucked i din't recieved it yet
+     -> Intent: payment_issue | Escalate: True
+  Text: My app keeps freezing after the update
+     -> Intent: product_defect | Escalate: False
+
+
+--------------------------------------------------------------------------------
+INCIDENT #5: Markdown Code Fence (```json) JSON Parsing Failures
+--------------------------------------------------------------------------------
+Symptoms & Error:
+  - LLM successfully generated responses, but classifier always returned:
+    "Fallback to keyword classifier."
+  - Standard 'json.loads()' threw 'json.decoder.JSONDecodeError'.
+
+Root Cause:
+  - Most LLMs (including 'nex-agi/nex-n2.5-mini:free') wrap structured JSON in
+    Markdown formatting fences:
+      ```json
+      {"intent": "payment_issue", "confidence": 0.98, ...}
+      ```
+  - Direct 'json.loads()' fails on backticks.
+
+Fix Applied:
+  - Built an extraction layer in 'src/agent/classify.py':
+    1. Strip leading and trailing whitespace.
+    2. Strip '```json' or '```' markdown prefixes and suffixes.
+    3. Added regex fallback matching outermost '{...}' if conversational prose
+       accompanies the payload.
+
+Verification Output:
+  [DEBUG RAW RESPONSE]: '{"intent":"payment_issue","confidence":0.98,"reasoning":"The customer says their payment got stuck, indicating a payment processing issue."}'
+  
+  --- Result ---
+  Message:    My payment got stucked i din't recieved it yet
+  Intent:     payment_issue
+  Confidence: 0.98
+  Reasoning:  The customer says their payment got stuck, indicating a payment processing issue.
+
+
+--------------------------------------------------------------------------------
+SUMMARY OF SYSTEM RESILIENCE & GUARDRAILS IMPLEMENTED
+--------------------------------------------------------------------------------
+1. Two-Tier Classification Pipeline:
+   - Primary: Zero-shot prompt-engineered LLM JSON engine with typo tolerance.
+   - Secondary: Resilient stem-based keyword matching heuristic with dynamic
+     explainability output (no silent failures).
+2. Zero-Crash Return Contract:
+   - Defensive type-guards ensure the pipeline handles None, empty strings,
+     network timeouts, and corrupted JSON without throwing fatal exceptions.
+3. Observability & CLI Modes:
+   - Built dual-mode execution supporting automated batch evaluation (--text)
+     and interactive debugging REPL loops.
+================================================================================
