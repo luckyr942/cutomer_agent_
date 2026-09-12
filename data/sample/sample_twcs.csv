@@ -1,5 +1,5 @@
 tweet_id,author_id,inbound,created_at,text,response_tweet_id,in_response_to_tweet_id
-0,customer_1,True,Wed Oct 11 10:00:00 +0000 2017,My package was supposed to arrive yesterday but it still says in transit. Where is my order #12345? @AmazonHelp,102,
+101,customer_1,True,Wed Oct 11 10:00:00 +0000 2017,My package was supposed to arrive yesterday but it still says in transit. Where is my order #12345? @AmazonHelp,102,
 102,AmazonHelp,False,Wed Oct 11 10:05:00 +0000 2017,We are sorry to hear that! Please send us a DM with your order number and full address so we can investigate.,103,101
 103,customer_1,True,Wed Oct 11 10:10:00 +0000 2017,I just sent you a DM with the order details.,104,102
 104,AmazonHelp,False,Wed Oct 11 10:15:00 +0000 2017,Thanks for the info! We checked your shipment and it is out for delivery today by 5 PM.,,103
