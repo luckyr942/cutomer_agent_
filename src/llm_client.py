@@ -32,16 +32,9 @@ class LLMClient:
             )
         else:
             self.client = None
-
-    
-    def generate(self, prompt:str,
-        system_prompt: str = "Yoa are a hellpful customer support AI assistant.") -> 
-        str: """
-        Send a prompt to the LLM.
-
-        If no API key is configured, use a mock response.
-        If the API request fails, also fall back to mock mode.
-        """
+            
+    def generate(self, prompt: str, system_prompt: str = "You are a helpful customer support AI assistant.") -> str:
+        """Sends a completion request to LLM API (or mock if no key is present)."""
 
         if not self.client:
             print("No API KEYS are found ")
