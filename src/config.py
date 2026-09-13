@@ -11,11 +11,12 @@ DATA_DIR = BASE_DIR / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 SAMPLE_DATA_DIR = DATA_DIR / "sample"
+EVAL_DIR = BASE_DIR / "eval"
 
 RAW_CSV_PATH = RAW_DATA_DIR / "twcs.csv"
 SAMPLE_CSV_PATH = SAMPLE_DATA_DIR / "sample_twcs.csv"
 PROCESSED_CONVERSATION_PATH = PROCESSED_DATA_DIR / "brand_conversations.json"
-GOLDEN_SET_PATH = BASE_DIR / "eval" / "golden_set.csv"
+BENCHMARK_SET_PATH = EVAL_DIR / "benchmark_set.csv"
 
 # LLM Configuration (OpenRouter API)
 OPENAI_API_KEY = (
