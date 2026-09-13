@@ -1,8 +1,7 @@
 ================================================================================
            ENGINEERING BUG AUDIT, POST-MORTEM & RESOLUTION LOG
 Project: LLM Customer Support Agent (Intent Classification & Guardrails)
-Environment: macOS (Apple Silicon), Python 3.12 (.venv), OpenRouter API
-Model: nex-agi/nex-n2.5-mini:free
+Environment: macOS (Apple Silicon), Python 3.12 (.venv), OpenRouter / Groq API
 ================================================================================
 
 --------------------------------------------------------------------------------
@@ -156,16 +155,60 @@ Verification Output:
 
 
 --------------------------------------------------------------------------------
+INCIDENT #6: Multi-Provider Failover & API Rate Limit Handling (HTTP 429)
+--------------------------------------------------------------------------------
+Symptoms & Error:
+  - Running 150 benchmark test cases repeatedly triggered OpenRouter free tier limit:
+    'Error code: 429 - Rate limit exceeded: free-models-per-day'
+  - The OpenAI client paused in exponential backoff retries, slowing down evaluation.
+
+Root Cause:
+  - OpenAI SDK defaults to 'max_retries=2', making repeated network calls on quota exhaustion.
+
+Fix Applied:
+  1. Configured 'max_retries=0' in 'src/llm_client.py' to eliminate retry delays on quota limits.
+  2. Added single-warning rate limit detection: when a 429 occurs, 'LLMClient' logs a single
+     clean warning line and immediately switches to fast local fallback mode for subsequent calls.
+  3. Integrated Groq API ('https://api.groq.com/openai/v1') with key resolution in 'src/config.py'
+     to allow high-speed live cloud inference (500+ tokens/sec).
+
+Verification Output:
+  ⚠️ API Rate Limit hit (429). Switching to fast offline fallback mode.
+  Pipeline completes 150 evaluations in sub-second speed without crashing.
+
+
+--------------------------------------------------------------------------------
+INCIDENT #7: Groq Model Deprecations & Reasoning Tag (<think>) Stripping
+--------------------------------------------------------------------------------
+Symptoms & Error:
+  - Initial Groq model IDs ('llama3-8b-8192', 'gemma2-9b-it') returned 400 decommissioned errors.
+  - Reasoning models like 'qwen/qwen3.6-27b' output internal '<think>...' reasoning text that
+    consumed token budgets before completing responses.
+
+Root Cause:
+  - Groq updated its active model suite, deprecating older Llama 3 legacy endpoints.
+  - Open-weights reasoning models prefix final replies with '<think>' reasoning blocks.
+
+Fix Applied:
+  1. Configured active supported model 'openai/gpt-oss-20b' in '.env'.
+  2. Added defensive reasoning tag stripping in 'src/llm_client.py':
+     if "<think>" in content and "</think>" in content:
+         content = content.split("</think>")[-1]
+
+Verification Output:
+  Model: openai/gpt-oss-20b
+  Intent: delivery_delay (Conf: 0.95)
+  Final Reply: We’re sorry to hear about the delay. Please send us a DM with your order number...
+
+
+--------------------------------------------------------------------------------
 SUMMARY OF SYSTEM RESILIENCE & GUARDRAILS IMPLEMENTED
 --------------------------------------------------------------------------------
-1. Two-Tier Classification Pipeline:
-   - Primary: Zero-shot prompt-engineered LLM JSON engine with typo tolerance.
-   - Secondary: Resilient stem-based keyword matching heuristic with dynamic
-     explainability output (no silent failures).
+1. Multi-Provider Fallback Architecture:
+   - Primary Cloud LLM: Groq API ('openai/gpt-oss-20b') / OpenRouter API.
+   - Secondary Local Engine: Resilient stem-based keyword rules + TF-IDF historical retrieval.
 2. Zero-Crash Return Contract:
-   - Defensive type-guards ensure the pipeline handles None, empty strings,
-     network timeouts, and corrupted JSON without throwing fatal exceptions.
+   - Defensive type-guards handle None, empty strings, rate limits (429), and corrupted JSON cleanly.
 3. Observability & CLI Modes:
-   - Built dual-mode execution supporting automated batch evaluation (--text)
-     and interactive debugging REPL loops.
+   - Automated reproduction via 'run_pipeline.sh', test command options, and interactive CLI loops.
 ================================================================================
