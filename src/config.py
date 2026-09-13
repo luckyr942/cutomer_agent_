@@ -18,14 +18,16 @@ SAMPLE_CSV_PATH = SAMPLE_DATA_DIR / "sample_twcs.csv"
 PROCESSED_CONVERSATION_PATH = PROCESSED_DATA_DIR / "brand_conversations.json"
 BENCHMARK_SET_PATH = EVAL_DIR / "benchmark_set.csv"
 
-# LLM Configuration (OpenRouter API)
+# LLM Configuration (Groq / OpenRouter / OpenAI API)
 OPENAI_API_KEY = (
-    os.getenv("OPENROUTER_API_KEY_NEX_N2.5") 
+    os.getenv("OPENAI_API_KEY")
+    or os.getenv("GROQ_API_KEY")
+    or os.getenv("OPENROUTER_API_KEY_NEX_N2.5") 
     or os.getenv("OPENROUTER_API_KEY") 
-    or os.getenv("OPENAI_API_KEY", "")
+    or ""
 )
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
-DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "nex-agi/nex-n2.5-mini:free")
+DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "llama-3.1-8b-instant")
 
 # Target Brand default
 DEFAULT_BRAND = "AmazonHelp"

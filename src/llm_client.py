@@ -34,6 +34,7 @@ class LLMClient:
             self.client = OpenAI(
                 api_key=self.api_key,
                 base_url=self.base_url,
+                max_retries=0,
                 default_headers={
                     "HTTP-Referer": "https://github.com/customer-support-agent",
                     "X-Title": "Customer Support Agent",
@@ -46,19 +47,19 @@ class LLMClient:
         """Sends a completion request to LLM API (or mock if no key is present)."""
 
         if not self.client:
-            print("No API KEYS are found ")
             return self._mock_response(prompt)
 
         try:
             response = self.client.chat.completions.create(
-                model = self.model,
-                messages = [
-                    {   "role" : "system",
-                        "content" :system_prompt,
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": system_prompt,
                     },
                     {
                         "role": "user",
-                        "content" : prompt,
+                        "content": prompt,
                     },
                 ],
                 temperature=0.2,
@@ -69,13 +70,22 @@ class LLMClient:
             if not content:
                 raise ValueError("LLM returned an empty response.")
 
+            # Strip <think>...</think> reasoning blocks if model outputs thought process
+            if "<think>" in content and "</think>" in content:
+                content = content.split("</think>")[-1]
+
             return content.strip()
 
         except Exception as error:
-            print(
-                f"LLM API call failed: {error}"
-            )
-            print("Falling back to mock response.")
+            error_str = str(error)
+            if "429" in error_str or "rate limit" in error_str.lower():
+                if not hasattr(self, "_rate_limit_warned"):
+                    print("⚠️ API Rate Limit hit (429). Switching to fast offline fallback mode.")
+                    self._rate_limit_warned = True
+                self.client = None
+            else:
+                print(f"LLM API call failed: {error}")
+                print("Falling back to mock response.")
 
             return self._mock_response(prompt)
 

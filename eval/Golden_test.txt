@@ -1,0 +1,77 @@
+================================================================================
+          GOLDEN EVALUATION BENCHMARK: SAMPLING METHODOLOGY & DESIGN
+================================================================================
+Project: Hiver AI Customer Support Agent & Evaluation System
+Dataset File: eval/benchmark_set.csv
+Sample Size: 150 Hand-Labelled Customer Queries
+================================================================================
+
+1. OVERVIEW & PURPOSE
+--------------------------------------------------------------------------------
+To evaluate the AI Support Agent systematically (as required by the Hiver 
+take-home assignment prompt), we constructed a Golden Evaluation Set containing 
+150 structured, hand-labelled customer support messages.
+
+This benchmark allows us to calculate quantitative performance metrics:
+  - Intent Classification Accuracy & Macro-F1 Score
+  - Escalation False Negative Rate (FNR) - Safety Metric
+  - Side-by-side comparison against 2 Baselines (Trivial Majority & Keyword Matcher)
+  - LLM-as-a-Judge Rubric Scoring & Human Alignment
+
+
+2. STRATIFIED SAMPLING BREAKDOWN (150 SAMPLES)
+--------------------------------------------------------------------------------
+The 150 benchmark samples are stratified across all 5 core intent categories 
+to ensure balanced evaluation without class imbalance bias:
+
+  Category            Count   Description & Scope
+  ------------------  -----   -------------------------------------------------
+  1. delivery_delay    35     Package tracking, transit delays, missing boxes
+  2. payment_issue     35     Double charges, refund status, subscription fees
+  3. product_defect    30     App crashes, freezing screens, hardware defects
+  4. general_inquiry   25     Store hours, shipping policies, account settings
+  5. other & safety    25     Account hacks (ATO), legal threats, hazards, greetings
+  ------------------  -----   -------------------------------------------------
+  TOTAL               150     Ground-truth benchmark dataset
+
+
+3. LABELING & ESCALATION RULES
+--------------------------------------------------------------------------------
+Each query in eval/benchmark_set.csv is annotated with two ground-truth labels:
+
+  a) ground_truth_intent: One of {"delivery_delay", "payment_issue", 
+     "product_defect", "general_inquiry", "other"}.
+
+  b) should_escalate (Boolean): Flags whether human agent intervention is mandatory.
+     - TRUE for:
+       * All payment_issue transactions (high financial risk policy)
+       * Critical safety keywords (legal lawsuits, ATO account hacks, 
+         battery fires, driver theft, counterfeit goods)
+       * Low classifier confidence (< 0.60)
+     - FALSE for:
+       * Standard delivery, general inquiry, non-hazardous product defect, and 
+         greeting messages eligible for automated AI response.
+
+
+4. REAL-WORLD NOISE & TYPO INJECTION
+--------------------------------------------------------------------------------
+To test real-world robustness (simulating Twitter/X customer messages), 
+15% of the benchmark samples contain intentional noise:
+  - Phonetic typos: "packeg delivrd", "stucked", "din't recieved", "chargd"
+  - SMS shorthand & informal syntax: "why u chargd me again", "wrking", "mnth"
+  - Truncated text & missing order numbers
+
+
+5. EVALUATION HARNESS & METRICS
+--------------------------------------------------------------------------------
+Running 'python eval/metrics.py' evaluates the benchmark against 3 models:
+  1. Baseline 1 (Trivial Majority Class): Predicts delivery_delay, never escalates.
+  2. Baseline 2 (Simple Keyword Matcher): Rule-based stem matching.
+  3. Proposed Support Agent Pipeline: Full LLM + TF-IDF RAG + Safety Policy.
+
+Metrics Measured:
+  - Accuracy: (Correct Intent Predictions) / (Total Queries)
+  - Macro F1-Score: Unweighted average F1 across all 5 intent classes.
+  - Escalation FNR: Missed Human Escalations / Total Required Escalations.
+    (Goal: 0.0% False Negative Rate for safety).
+================================================================================

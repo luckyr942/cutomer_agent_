@@ -75,7 +75,7 @@ if __name__ == "__main__":
         print(f"Final Reply       :\n{res['final_reply']}\n")
     else:
         sample_query = "My package was supposed to arrive yesterday but it still says in transit. Where is my order #12345?"
-        res = pipeline.process(sample_query)
+        res = pipeline.process_agent_workflow(sample_query)
         print("\n" + "="*50)
         print(" PIPELINE EXECUTION DEMO")
         print("="*50)

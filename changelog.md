@@ -4,6 +4,17 @@ All notable technical upgrades, bug fixes, and architectural guardrails applied 
 
 ---
 
+## [v0.3.0] - Graceful API Rate Limit (429) Handling & 1-Command Pipeline
+
+### 1. Instant Offline Fallback on 429 Rate Limits (`src/llm_client.py`)
+* Configured `max_retries=0` on the OpenAI client instance to eliminate exponential backoff delay loops when hitting free tier API limits.
+* Added single-warning rate limit detection: when a `429` status code or rate-limit error is encountered, `LLMClient` immediately logs a clear warning and switches to sub-second local mock generation for all subsequent calls.
+
+### 2. End-to-End Master Execution Script (`run_pipeline.sh`)
+* Built the `run_pipeline.sh` bash script to automate data ingestion, dataset synthesis, 150-sample golden set creation, live agent demo, quantitative metrics evaluation, and LLM-as-a-Judge execution in 1 command.
+
+---
+
 ## [v0.2.0] - Robust Intent Classification, Error Resiliency & Eval Guardrails
 
 ### 1. Architectural Guardrails & Defensive Handling

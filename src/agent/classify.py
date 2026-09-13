@@ -102,7 +102,6 @@ class LLMIntentClassifier:
 
         user_prompt = f"Customer Message: '{text}'"
         raw_response = self.llm.generate(prompt=user_prompt, system_prompt=system_prompt)
-        print(f"\n[DEBUG RAW RESPONSE]: {repr(raw_response)}\n")
         # 1. Defensive check: Ensure raw_response is a valid string
         if raw_response:
             # 2. Simple clean: strip whitespace and markdown ```json / ``` wrappers
