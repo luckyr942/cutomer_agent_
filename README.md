@@ -1,6 +1,6 @@
 # AmazonHelp Customer Support Agent & Evaluation Suite
 
-Built for the Hiver SDE Intern Take-Home Assignment.
+
 
 This project is a 3-stage customer support agent designed specifically for **`@AmazonHelp`** (Amazon's Twitter support handle). It reads incoming customer tweets, categorizes their intent, drafts brand-consistent replies using historical `@AmazonHelp` conversations, and escalates high-risk cases (payment fraud, account security, hazardous items, legal threats) to human specialists with zero missed escalations.
 
