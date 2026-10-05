@@ -1,6 +1,6 @@
-# Implementation Plan: Hiver AI Customer Support Agent & Evaluation System
+# Implementation Plan:  AI Customer Support Agent & Evaluation System
 
-This document provides a comprehensive, phased roadmap to build, evaluate, and document the **AI Customer Support & Evaluation Framework** for the Hiver assignment.
+This document provides a comprehensive, phased roadmap to build, evaluate, and document the **AI Customer Support & Evaluation Framework** for the AI assignment.
 
 ## User Review Required
 
@@ -14,10 +14,10 @@ This document provides a comprehensive, phased roadmap to build, evaluate, and d
 
 ## 1. Project Directory Structure
 
-Target root directory: `hiver-support-agent`
+Target root directory: `AI-support-agent`
 
 ```
-hiver-support-agent/
+AI-support-agent/
 ├── README.md
 ├── requirements.txt
 ├── .env.example
@@ -70,8 +70,8 @@ hiver-support-agent/
 - **Goal**: Initialize environment, download dataset from Kaggle, inspect columns/authors, and reconstruct conversation threads.
 - **Commands**:
   ```bash
-  mkdir hiver-support-agent
-  cd hiver-support-agent
+  mkdir AI-support-agent
+  cd AI-support-agent
   python3 -m venv .venv
   source .venv/bin/activate
   ```
