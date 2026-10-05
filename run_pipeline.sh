@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Hiver SDE Intern Assignment — End-to-End Execution & Evaluation Pipeline
+#  End-to-End Execution & Evaluation Pipeline
 # Brand: @AmazonHelp | Customer Support AI Agent
 # ==============================================================================
 
